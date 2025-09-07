@@ -36,18 +36,18 @@
   <div class="wrap">
     <header>
       <h1>Flashcard Study</h1>
-      <small class="meta">Insert pairs as <strong>The front of the card first, and then the back below</strong> per line. Choose direction and shuffle.</small>
+      <small class="meta">Insert pairs as <strong>The front of the card first, and then the back below</strong>. Each pair should be two lines.</small>
     </header>
     <div class="grid">
       <div class="panel">
-        <label for="pairs">Back list (Front,Back per line)</label>
+        <label for="pairs">Card list (Front line, then Back line)</label>
         <textarea id="pairs"></textarea>
         <div style="display:flex;gap:8px;margin-top:8px;align-items:center">
           <div style="flex:1">
             <label for="mode">Mode</label>
             <select id="mode">
-              <option value="symbol-to-name">Show Front → guess Back</option>
-              <option value="name-to-symbol">Show Back → guess Front</option>
+              <option value="front-to-back">Show Front → guess Back</option>
+              <option value="back-to-front">Show Back → guess Front</option>
               <option value="both">Both directions (random per card)</option>
             </select>
           </div>
@@ -110,7 +110,7 @@
       const out = [];
       for(let i=0;i<lines.length;i+=2){
         if(lines[i+1]){
-          out.push({symbol:lines[i], name:lines[i+1]});
+          out.push({front:lines[i], back:lines[i+1]});
         }
       }
       return out;
@@ -129,11 +129,25 @@
       if(currentIndex<0 || currentIndex>=order.length){promptEl.textContent='Done';directionHint.textContent='You reached the end.';return;}
       const idx = order[currentIndex];
       const card = cards[idx];
-      const dir = (modeSel.value==='both') ? (directionForCard[idx] || 's2n') : (modeSel.value==='symbol-to-name'?'s2n':'n2s');
-      // Always show symbol on front
-      promptEl.textContent = card.symbol;
-      directionHint.textContent = 'Show symbol → guess element name';
-      answerEl.textContent = '\xa0';
+      let dir;
+      if(modeSel.value==='both'){
+        dir = directionForCard[idx] || (Math.random()<0.5?'f2b':'b2f');
+        directionForCard[idx] = dir;
+      } else if(modeSel.value==='front-to-back'){
+        dir = 'f2b';
+      } else {
+        dir = 'b2f';
+      }
+
+      if(dir==='f2b'){
+        promptEl.textContent = card.front;
+        directionHint.textContent = 'Show front → guess back';
+        answerEl.textContent = '\xa0';
+      } else {
+        promptEl.textContent = card.back;
+        directionHint.textContent = 'Show back → guess front';
+        answerEl.textContent = '\xa0';
+      }
       responseInput.value = '';
     }
 
@@ -148,7 +162,12 @@
       if(currentIndex<0 || currentIndex>=order.length) return;
       const idx = order[currentIndex];
       const card = cards[idx];
-      answerEl.textContent = card.name;
+      const dir = directionForCard[idx] || (modeSel.value==='front-to-back'?'f2b': modeSel.value==='back-to-front'?'b2f':'f2b');
+      if(dir==='f2b'){
+        answerEl.textContent = card.back;
+      } else {
+        answerEl.textContent = card.front;
+      }
     }
 
     function checkAnswer(){
@@ -157,8 +176,9 @@
       if(currentIndex<0 || currentIndex>=order.length) return;
       const idx = order[currentIndex];
       const card = cards[idx];
-      const correct = card.name.toLowerCase();
-      if(text.toLowerCase()===correct){answerEl.textContent = 'Correct ✓';setTimeout(()=>{ nextCard(); }, 600);} else {answerEl.textContent = `No — answer: ${card.name}`;}
+      const dir = directionForCard[idx] || (modeSel.value==='front-to-back'?'f2b': modeSel.value==='back-to-front'?'b2f':'f2b');
+      const correct = (dir==='f2b'?card.back:card.front).toLowerCase();
+      if(text.toLowerCase()===correct){answerEl.textContent = 'Correct ✓';setTimeout(()=>{ nextCard(); }, 600);} else {answerEl.textContent = `No — answer: ${dir==='f2b'?card.back:card.front}`;}
     }
 
     function shuffleArray(a){
