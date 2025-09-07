@@ -124,30 +124,33 @@
       shownCountEl.textContent = shown;
     }
 
+    function getDirection(idx){
+      if(modeSel.value==='both'){
+        if(!directionForCard[idx]){
+          directionForCard[idx] = (Math.random()<0.5?'f2b':'b2f');
+        }
+        return directionForCard[idx];
+      }
+      if(modeSel.value==='front-to-back') return 'f2b';
+      if(modeSel.value==='back-to-front') return 'b2f';
+      return 'f2b';
+    }
+
     function renderCard(){
       if(order.length===0){promptEl.textContent = '—';answerEl.textContent='\xa0';directionHint.textContent = 'Load a list to begin.';return;}
       if(currentIndex<0 || currentIndex>=order.length){promptEl.textContent='Done';directionHint.textContent='You reached the end.';return;}
       const idx = order[currentIndex];
       const card = cards[idx];
-      let dir;
-      if(modeSel.value==='both'){
-        dir = directionForCard[idx] || (Math.random()<0.5?'f2b':'b2f');
-        directionForCard[idx] = dir;
-      } else if(modeSel.value==='front-to-back'){
-        dir = 'f2b';
-      } else {
-        dir = 'b2f';
-      }
+      const dir = getDirection(idx);
 
       if(dir==='f2b'){
         promptEl.textContent = card.front;
         directionHint.textContent = 'Show front → guess back';
-        answerEl.textContent = '\xa0';
       } else {
         promptEl.textContent = card.back;
         directionHint.textContent = 'Show back → guess front';
-        answerEl.textContent = '\xa0';
       }
+      answerEl.textContent = '\xa0';
       responseInput.value = '';
     }
 
@@ -162,12 +165,8 @@
       if(currentIndex<0 || currentIndex>=order.length) return;
       const idx = order[currentIndex];
       const card = cards[idx];
-      const dir = directionForCard[idx] || (modeSel.value==='front-to-back'?'f2b': modeSel.value==='back-to-front'?'b2f':'f2b');
-      if(dir==='f2b'){
-        answerEl.textContent = card.back;
-      } else {
-        answerEl.textContent = card.front;
-      }
+      const dir = getDirection(idx);
+      answerEl.textContent = (dir==='f2b'?card.back:card.front);
     }
 
     function checkAnswer(){
@@ -176,9 +175,14 @@
       if(currentIndex<0 || currentIndex>=order.length) return;
       const idx = order[currentIndex];
       const card = cards[idx];
-      const dir = directionForCard[idx] || (modeSel.value==='front-to-back'?'f2b': modeSel.value==='back-to-front'?'b2f':'f2b');
+      const dir = getDirection(idx);
       const correct = (dir==='f2b'?card.back:card.front).toLowerCase();
-      if(text.toLowerCase()===correct){answerEl.textContent = 'Correct ✓';setTimeout(()=>{ nextCard(); }, 600);} else {answerEl.textContent = `No — answer: ${dir==='f2b'?card.back:card.front}`;}
+      if(text.toLowerCase()===correct){
+        answerEl.textContent = 'Correct ✓';
+        setTimeout(()=>{ nextCard(); }, 600);
+      } else {
+        answerEl.textContent = `No — answer: ${dir==='f2b'?card.back:card.front}`;
+      }
     }
 
     function shuffleArray(a){
@@ -201,7 +205,7 @@
       cards = parsePairs(pairsTA.value);
       order = cards.map((_,i)=>i);
       if(randomChk.checked) shuffleArray(order);
-      currentIndex=-1;shown=0;updateProgress();renderCard();
+      currentIndex=-1;shown=0;directionForCard={};updateProgress();renderCard();
     });
     document.getElementById('start').addEventListener('click', ()=>{
       currentIndex=-1;shown=0;
